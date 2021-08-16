@@ -1,0 +1,29 @@
+*.opensdf
+*.sdf
+*.ipch
+*.suo
+*.exp
+*.ilk
+*.pdb
+*.iobj
+*.ipdb
+*.aps
+*.user
+*.tlog
+*.obj
+*.log
+*.res
+*.idb
+*.pch
+*.lastbuildstate
+
+# Directories
+ipch
+Debug
+Release
+.vs
+
+# Executables
+*.exe
+*.dll
+*.lib
