@@ -19,11 +19,6 @@
 class CKiwoomRestfulCppApp : public CWinApp
 {
 public:
-	// crow::SimpleApp *app;
-	void *crowApp; // Sorry man! It's not easy to include crow_all.h
-	CKHOpenAPI kiwoom;
-	bool kiwoomConnected;
-
 	CKiwoomRestfulCppApp();
 
 // 재정의입니다.

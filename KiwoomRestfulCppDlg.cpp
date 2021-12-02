@@ -1,12 +1,15 @@
 ﻿
 // KiwoomRestfulCppDlg.cpp: 구현 파일
 //
-
 #include "pch.h"
 #include "framework.h"
 #include "KiwoomRestfulCpp.h"
 #include "KiwoomRestfulCppDlg.h"
 #include "afxdialogex.h"
+#include <string>
+
+#define CROW_MAIN
+#include "crow_all.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -15,7 +18,12 @@
 
 // CKiwoomRestfulCppDlg 대화 상자
 
-
+UINT CrowThreadProc(LPVOID Param)
+{
+	crow::SimpleApp* app = (crow::SimpleApp*) Param;
+	app->multithreaded().run();
+	return 0;
+}
 
 CKiwoomRestfulCppDlg::CKiwoomRestfulCppDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_KIWOOMRESTFULCPP_DIALOG, pParent)
@@ -28,12 +36,13 @@ void CKiwoomRestfulCppDlg::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 
 	// 이거 안 하면 winocc.cpp line 377 에서 에러 뜸
-	DDX_Control(pDX, IDC_KHOPENAPICTRL1, theApp.kiwoom);
+	DDX_Control(pDX, IDC_KHOPENAPICTRL1, this->kiwoom);
 }
 
 BEGIN_MESSAGE_MAP(CKiwoomRestfulCppDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
+	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 
@@ -48,9 +57,54 @@ BOOL CKiwoomRestfulCppDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 큰 아이콘을 설정합니다.
 	SetIcon(m_hIcon, FALSE);		// 작은 아이콘을 설정합니다.
 
+	// Will become true when the dialog is created and CommConnect is invoked there.
+	// See KiwoomRestfulCppDlg.cpp
+	this->kiwoomConnected = false;
+	this->reqno = 0;
+
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
 	// 로그인 ㄱㄱ
-	theApp.kiwoomConnected = theApp.kiwoom.CommConnect();
+	// 성공여부는 event handler에서 알 수 있음.
+	this->kiwoom.CommConnect();
+
+	auto crowApp = new crow::SimpleApp();
+	this->crowApp = (void*)crowApp;
+
+	// https://int-i.github.io/cpp/2020-07-22/vcpkg-boost/
+	// Install boost with vcpkg!
+	// .\vcpkg install boost boost:x64-windows
+	// .\vcpkg integrate install
+	CROW_ROUTE((*crowApp), "/")([]()
+	{
+		return "Kiwoom Restful";
+	});
+
+	CROW_ROUTE((*crowApp), "/balance")
+	.methods("POST"_method)
+	([this](const crow::request& req)
+	{
+		if (!this->kiwoomConnected) {
+			return crow::response{ "{\"error\": \"Kiwoom not connected yet\"}" };
+		}
+		auto x = crow::json::load(req.body);
+		if (!x) {
+			return crow::response(400);
+		}
+
+		this->reqno++;
+		const char* num = std::to_string(this->reqno).c_str();
+		const char* rqname = (std::string("req") + num).c_str();
+		this->kiwoom.SetInputValue(L"계좌번호", (LPCTSTR) x["accno"].s().begin());
+		this->kiwoom.SetInputValue(L"비밀번호", L"");
+		this->kiwoom.SetInputValue(L"비밀번호입력매체구분", L"00");
+		this->kiwoom.SetInputValue(L"조회구분", L"2");
+		this->kiwoom.CommRqData((LPCTSTR)rqname, L"OPW00001", 0, (LPCTSTR)num);
+
+		return crow::response{ "/balance receive WIP" };
+	});
+
+	crowApp->port(12233);
+	AfxBeginThread(CrowThreadProc, (LPVOID) crowApp);
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }
@@ -91,3 +145,27 @@ HCURSOR CKiwoomRestfulCppDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+BEGIN_EVENTSINK_MAP(CKiwoomRestfulCppDlg, CDialogEx)
+	ON_EVENT(CKiwoomRestfulCppDlg, IDC_KHOPENAPICTRL1, 5, CKiwoomRestfulCppDlg::KiwoomOnEventConnect, VTS_I4)
+END_EVENTSINK_MAP()
+
+
+void CKiwoomRestfulCppDlg::KiwoomOnEventConnect(long nErrCode)
+{
+	this->kiwoomConnected = true;
+	if (nErrCode != 0)
+	{
+		std::string msg = std::string("Kiwoom connection failed with code=") + std::to_string(nErrCode);
+		AfxMessageBox((LPCTSTR) msg.c_str(), MB_OK | MB_ICONSTOP);
+	}
+}
+
+
+void CKiwoomRestfulCppDlg::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	// Delete crow
+	crow::SimpleApp* app = (crow::SimpleApp*) this->crowApp;
+	delete app;
+}

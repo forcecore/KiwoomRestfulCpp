@@ -12,6 +12,15 @@ class CKiwoomRestfulCppDlg : public CDialogEx
 public:
 	CKiwoomRestfulCppDlg(CWnd* pParent = nullptr);	// 표준 생성자입니다.
 
+// KIwoom stuff
+private:
+	// crow::SimpleApp *app;
+	void *crowApp; // Sorry man! It's not easy to include crow_all.h here!
+	CKHOpenAPI kiwoom;
+	bool kiwoomConnected;
+	int reqno;
+
+public:
 // 대화 상자 데이터입니다.
 #ifdef AFX_DESIGN_TIME
 	enum { IDD = IDD_KIWOOMRESTFULCPP_DIALOG };
@@ -30,4 +39,8 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
+public:
+	DECLARE_EVENTSINK_MAP()
+	void KiwoomOnEventConnect(long nErrCode);
+	afx_msg void OnDestroy();
 };
