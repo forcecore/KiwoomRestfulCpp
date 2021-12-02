@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <string>
+#include <map>
+
 
 // CKiwoomRestfulCppDlg 대화 상자
 class CKiwoomRestfulCppDlg : public CDialogEx
@@ -14,11 +17,15 @@ public:
 
 // KIwoom stuff
 private:
+	void initCrowHandlers(void *voidCrowApp);
+
 	// crow::SimpleApp *app;
 	void *crowApp; // Sorry man! It's not easy to include crow_all.h here!
 	CKHOpenAPI kiwoom;
 	bool kiwoomConnected;
 	int reqno;
+	std::map<std::wstring, bool> reqMap;
+	std::map<std::wstring, std::wstring> resultMap;
 
 public:
 // 대화 상자 데이터입니다.
@@ -38,9 +45,17 @@ protected:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
+	afx_msg void OnDestroy();
 	DECLARE_MESSAGE_MAP()
 public:
 	DECLARE_EVENTSINK_MAP()
 	void KiwoomOnEventConnect(long nErrCode);
-	afx_msg void OnDestroy();
+	void KiwoomOnReceiveRealData(LPCTSTR sRealKey, LPCTSTR sRealType, LPCTSTR sRealData);
+	void KiwoomOnReceiveMsg(LPCTSTR sScrNo, LPCTSTR sRQName, LPCTSTR sTrCode, LPCTSTR sMsg);
+	void KiwoomOnReceiveChejanData(LPCTSTR sGubun, long nItemCnt, LPCTSTR sFIdList);
+	void KiwoomOnReceiveInvestRealData(LPCTSTR sRealKey);
+	void KiwoomOnReceiveRealCondition(LPCTSTR sTrCode, LPCTSTR strType, LPCTSTR strConditionName, LPCTSTR strConditionIndex);
+	void KiwoomOnReceiveTrCondition(LPCTSTR sScrNo, LPCTSTR strCodeList, LPCTSTR strConditionName, long nIndex, long nNext);
+	void KiwoomOnReceiveConditionVer(long lRet, LPCTSTR sMsg);
+	void KiwoomOnReceiveTrData(LPCTSTR sScrNo, LPCTSTR sRQName, LPCTSTR sTrCode, LPCTSTR sRecordName, LPCTSTR sPrevNext, long nDataLength, LPCTSTR sErrorCode, LPCTSTR sMessage, LPCTSTR sSplmMsg);
 };

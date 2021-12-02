@@ -7,6 +7,11 @@
 #include "KiwoomRestfulCppDlg.h"
 #include "afxdialogex.h"
 #include <string>
+#include <map>
+#include <algorithm> 
+#include <cctype>
+#include <locale>
+#include <boost/locale.hpp>
 
 #define CROW_MAIN
 #include "crow_all.h"
@@ -14,6 +19,71 @@
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
+
+
+// trim from start (in place)
+static inline void ltrim(std::wstring& s) {
+	s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+		return !std::isspace(ch);
+		}));
+}
+
+// trim from end (in place)
+static inline void rtrim(std::wstring& s)
+{
+	s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+		return !std::isspace(ch);
+		}).base(), s.end());
+}
+
+// trim from both ends (in place)
+static inline void trim(std::wstring& s)
+{
+	ltrim(s);
+	rtrim(s);
+}
+
+// trim from start (copying)
+static inline std::wstring ltrim_copy(std::wstring s)
+{
+	ltrim(s);
+	return s;
+}
+
+// trim from end (copying)
+static inline std::wstring rtrim_copy(std::wstring s)
+{
+	rtrim(s);
+	return s;
+}
+
+// trim from both ends (copying)
+static inline std::wstring trim_copy(std::wstring s)
+{
+	trim(s);
+	return s;
+}
+
+std::wstring cstring2int2str(const CString &num)
+{
+	if (num == L"")
+		return L"0";
+	int x = std::stoi(std::wstring(num));
+	return std::to_wstring(x);
+}
+
+bool startswith(const std::wstring& ss, const std::wstring& prefix)
+{
+	if (ss.size() < prefix.size())
+		return false;
+
+	for (int i = 0; i < prefix.size(); ++i)
+	{
+		if (prefix[i] != ss[i])
+			return false;
+	}
+	return true;
+}
 
 
 // CKiwoomRestfulCppDlg 대화 상자
@@ -48,6 +118,108 @@ END_MESSAGE_MAP()
 
 // CKiwoomRestfulCppDlg 메시지 처리기
 
+void CKiwoomRestfulCppDlg::initCrowHandlers(void *voidCrowApp)
+{
+	crow::SimpleApp* crowApp = (crow::SimpleApp*)voidCrowApp;
+
+	CROW_ROUTE((*crowApp), "/")([]()
+	{
+		return "Kiwoom Restful";
+	});
+
+	CROW_ROUTE((*crowApp), "/balance")
+	.methods("POST"_method)
+	([this](const crow::request& req)
+	{
+		auto x = crow::json::load(req.body);
+		if (!x) {
+			return crow::response(400);
+		}
+
+		this->reqno++;
+		std::wstring str_reqno = std::to_wstring(this->reqno);
+		std::wstring rqname = std::wstring(L"req") + str_reqno;
+		//std::string accno_str = std::string(x["accno"].s().begin());
+		std::wstring accno;
+		// wstr to str, thanks to https://wendys.tistory.com/40
+		accno.assign(x["accno"].s().begin(), x["accno"].s().end());
+
+		// Delayed connectedness check for faster debug of the crow part
+		if (!this->kiwoomConnected) {
+			return crow::response{ "{\"error\": \"Kiwoom not connected yet\"}" };
+		}
+	
+		this->kiwoom.SetInputValue(L"계좌번호", (LPCTSTR)accno.c_str());
+		this->kiwoom.SetInputValue(L"비밀번호", L"");
+		this->kiwoom.SetInputValue(L"상장폐지조회구분", L"1");
+		this->kiwoom.SetInputValue(L"비밀번호입력매체구분", L"00");
+		int errCode = this->kiwoom.CommRqData((LPCTSTR)rqname.c_str(), L"OPW00004", 0, (LPCTSTR)str_reqno.c_str());
+
+		// Busy for data arrival
+		// Semaphore같은거 쓰면 좋을수도 있는데 귀찮다
+		// C++11 지원되게 컴파일하면 일단 reading은 tread-safe하니 OK...?
+		reqMap[rqname] = false;
+		while (!reqMap[rqname]);
+
+		reqMap.erase(reqMap.find(rqname));
+		std::string resp = boost::locale::conv::utf_to_utf<char>(resultMap[rqname]);
+		resultMap.erase(resultMap.find(rqname));
+		return crow::response{ resp };
+	});
+
+	CROW_ROUTE((*crowApp), "/order")
+	.methods("POST"_method)
+	([this](const crow::request& req)
+	{
+		auto x = crow::json::load(req.body);
+		if (!x) {
+			return crow::response(400);
+		}
+
+		this->reqno++;
+		std::wstring str_reqno = std::to_wstring(this->reqno);
+
+		std::wstring rqname, screenno, accno, code, hogagb, orgorderno;
+		rqname = std::wstring(L"sendorder") + str_reqno;
+		screenno = str_reqno;
+		// str to wstr, thanks to https://wendys.tistory.com/40
+		accno.assign(x["accno"].s().begin(), x["accno"].s().end());
+		code.assign(x["code"].s().begin(), x["code"].s().end());
+		int order_type = x["ordertype"].i();
+		int qty = x["qty"].i();
+		int price = x["price"].i();
+		hogagb.assign(x["hogagb"].s().begin(), x["hogagb"].s().end());
+
+		// Delayed connectedness check for faster debug of the crow part
+		if (!this->kiwoomConnected) {
+			return crow::response{ "{\"error\": \"Kiwoom not connected yet\"}" };
+		}
+
+		int errCode = this->kiwoom.SendOrder(
+			(LPCTSTR) rqname.c_str(),
+			(LPCTSTR) screenno.c_str(),
+			(LPCTSTR) accno.c_str(),
+			order_type,
+			(LPCTSTR) code.c_str(),
+			qty,
+			price,
+			(LPCTSTR) hogagb.c_str(),
+			(LPCTSTR) orgorderno.c_str() // 원주문번호, 정정 때 쓰임
+		);
+	
+		// Busy for data arrival
+		// Semaphore같은거 쓰면 좋을수도 있는데 귀찮다
+		// C++11 지원되게 컴파일하면 일단 reading은 tread-safe하니 OK...?
+		reqMap[rqname] = false;
+		while (!reqMap[rqname]);
+
+		reqMap.erase(reqMap.find(rqname));
+		std::string resp = boost::locale::conv::utf_to_utf<char>(resultMap[rqname]);
+		resultMap.erase(resultMap.find(rqname));
+		return crow::response{ "{\"message\": \"" + resp + "\"}" };
+	});
+}
+
 BOOL CKiwoomRestfulCppDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
@@ -67,42 +239,13 @@ BOOL CKiwoomRestfulCppDlg::OnInitDialog()
 	// 성공여부는 event handler에서 알 수 있음.
 	this->kiwoom.CommConnect();
 
-	auto crowApp = new crow::SimpleApp();
-	this->crowApp = (void*)crowApp;
-
 	// https://int-i.github.io/cpp/2020-07-22/vcpkg-boost/
 	// Install boost with vcpkg!
 	// .\vcpkg install boost boost:x64-windows
 	// .\vcpkg integrate install
-	CROW_ROUTE((*crowApp), "/")([]()
-	{
-		return "Kiwoom Restful";
-	});
-
-	CROW_ROUTE((*crowApp), "/balance")
-	.methods("POST"_method)
-	([this](const crow::request& req)
-	{
-		if (!this->kiwoomConnected) {
-			return crow::response{ "{\"error\": \"Kiwoom not connected yet\"}" };
-		}
-		auto x = crow::json::load(req.body);
-		if (!x) {
-			return crow::response(400);
-		}
-
-		this->reqno++;
-		const char* num = std::to_string(this->reqno).c_str();
-		const char* rqname = (std::string("req") + num).c_str();
-		this->kiwoom.SetInputValue(L"계좌번호", (LPCTSTR) x["accno"].s().begin());
-		this->kiwoom.SetInputValue(L"비밀번호", L"");
-		this->kiwoom.SetInputValue(L"비밀번호입력매체구분", L"00");
-		this->kiwoom.SetInputValue(L"조회구분", L"2");
-		this->kiwoom.CommRqData((LPCTSTR)rqname, L"OPW00001", 0, (LPCTSTR)num);
-
-		return crow::response{ "/balance receive WIP" };
-	});
-
+	auto crowApp = new crow::SimpleApp();
+	this->crowApp = (void*)crowApp;
+	this->initCrowHandlers(crowApp);
 	crowApp->port(12233);
 	AfxBeginThread(CrowThreadProc, (LPVOID) crowApp);
 
@@ -145,8 +288,28 @@ HCURSOR CKiwoomRestfulCppDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+
+void CKiwoomRestfulCppDlg::OnDestroy()
+{
+	CDialogEx::OnDestroy();
+
+	// Delete crow
+	crow::SimpleApp* app = (crow::SimpleApp*) this->crowApp;
+	app->stop();
+	delete app;
+}
+
+
 BEGIN_EVENTSINK_MAP(CKiwoomRestfulCppDlg, CDialogEx)
 	ON_EVENT(CKiwoomRestfulCppDlg, IDC_KHOPENAPICTRL1, 5, CKiwoomRestfulCppDlg::KiwoomOnEventConnect, VTS_I4)
+	ON_EVENT(CKiwoomRestfulCppDlg, IDC_KHOPENAPICTRL1, 2, CKiwoomRestfulCppDlg::KiwoomOnReceiveRealData, VTS_BSTR VTS_BSTR VTS_BSTR)
+	ON_EVENT(CKiwoomRestfulCppDlg, IDC_KHOPENAPICTRL1, 3, CKiwoomRestfulCppDlg::KiwoomOnReceiveMsg, VTS_BSTR VTS_BSTR VTS_BSTR VTS_BSTR)
+	ON_EVENT(CKiwoomRestfulCppDlg, IDC_KHOPENAPICTRL1, 4, CKiwoomRestfulCppDlg::KiwoomOnReceiveChejanData, VTS_BSTR VTS_I4 VTS_BSTR)
+	ON_EVENT(CKiwoomRestfulCppDlg, IDC_KHOPENAPICTRL1, 6, CKiwoomRestfulCppDlg::KiwoomOnReceiveInvestRealData, VTS_BSTR)
+	ON_EVENT(CKiwoomRestfulCppDlg, IDC_KHOPENAPICTRL1, 7, CKiwoomRestfulCppDlg::KiwoomOnReceiveRealCondition, VTS_BSTR VTS_BSTR VTS_BSTR VTS_BSTR)
+	ON_EVENT(CKiwoomRestfulCppDlg, IDC_KHOPENAPICTRL1, 8, CKiwoomRestfulCppDlg::KiwoomOnReceiveTrCondition, VTS_BSTR VTS_BSTR VTS_BSTR VTS_I4 VTS_I4)
+	ON_EVENT(CKiwoomRestfulCppDlg, IDC_KHOPENAPICTRL1, 9, CKiwoomRestfulCppDlg::KiwoomOnReceiveConditionVer, VTS_I4 VTS_BSTR)
+	ON_EVENT(CKiwoomRestfulCppDlg, IDC_KHOPENAPICTRL1, 1, CKiwoomRestfulCppDlg::KiwoomOnReceiveTrData, VTS_BSTR VTS_BSTR VTS_BSTR VTS_BSTR VTS_BSTR VTS_I4 VTS_BSTR VTS_BSTR VTS_BSTR)
 END_EVENTSINK_MAP()
 
 
@@ -158,14 +321,98 @@ void CKiwoomRestfulCppDlg::KiwoomOnEventConnect(long nErrCode)
 		std::string msg = std::string("Kiwoom connection failed with code=") + std::to_string(nErrCode);
 		AfxMessageBox((LPCTSTR) msg.c_str(), MB_OK | MB_ICONSTOP);
 	}
+	else
+	{
+		CWnd* label = GetDlgItem(IDC_STATIC);
+		label->SetWindowText(L"Kiwoom Connected");
+	}
 }
 
 
-void CKiwoomRestfulCppDlg::OnDestroy()
+void CKiwoomRestfulCppDlg::KiwoomOnReceiveRealData(LPCTSTR sRealKey, LPCTSTR sRealType, LPCTSTR sRealData)
 {
-	CDialogEx::OnDestroy();
+	// TODO: 여기에 메시지 처리기 코드를 추가합니다.
+	return;
+}
 
-	// Delete crow
-	crow::SimpleApp* app = (crow::SimpleApp*) this->crowApp;
-	delete app;
+
+void CKiwoomRestfulCppDlg::KiwoomOnReceiveMsg(LPCTSTR sScrNo, LPCTSTR sRQName, LPCTSTR sTrCode, LPCTSTR sMsg)
+{
+	// For some reason sRQName isn't requested by me.
+	if (reqMap.find(sRQName) == reqMap.end())
+		return;
+
+	std::wstring result;
+	if (startswith(sRQName, L"sendorder"))
+	{
+		resultMap[sRQName] = sMsg;
+		reqMap[sRQName] = true; // Mark ready. Order matters!
+	}
+
+	return;
+}
+
+
+void CKiwoomRestfulCppDlg::KiwoomOnReceiveChejanData(LPCTSTR sGubun, long nItemCnt, LPCTSTR sFIdList)
+{
+	// TODO: 여기에 메시지 처리기 코드를 추가합니다.
+	return;
+}
+
+
+void CKiwoomRestfulCppDlg::KiwoomOnReceiveInvestRealData(LPCTSTR sRealKey)
+{
+	// TODO: 여기에 메시지 처리기 코드를 추가합니다.
+	return;
+}
+
+
+void CKiwoomRestfulCppDlg::KiwoomOnReceiveRealCondition(LPCTSTR sTrCode, LPCTSTR strType, LPCTSTR strConditionName, LPCTSTR strConditionIndex)
+{
+	// TODO: 여기에 메시지 처리기 코드를 추가합니다.
+	return;
+}
+
+
+void CKiwoomRestfulCppDlg::KiwoomOnReceiveTrCondition(LPCTSTR sScrNo, LPCTSTR strCodeList, LPCTSTR strConditionName, long nIndex, long nNext)
+{
+	// TODO: 여기에 메시지 처리기 코드를 추가합니다.
+	return;
+}
+
+
+void CKiwoomRestfulCppDlg::KiwoomOnReceiveConditionVer(long lRet, LPCTSTR sMsg)
+{
+	// TODO: 여기에 메시지 처리기 코드를 추가합니다.
+	return;
+}
+
+
+void CKiwoomRestfulCppDlg::KiwoomOnReceiveTrData(LPCTSTR sScrNo, LPCTSTR sRQName, LPCTSTR sTrCode, LPCTSTR sRecordName, LPCTSTR sPrevNext, long nDataLength, LPCTSTR sErrorCode, LPCTSTR sMessage, LPCTSTR sSplmMsg)
+{
+	// For some reason sRQName isn't requested by me.
+	if (reqMap.find(sRQName) == reqMap.end())
+		return;
+
+	CString trcode(sTrCode);
+	std::wstring result;
+
+	if (trcode == "OPW00004") // cash... 어차피 정확하게 알기 힘듦... my자산 들어가서 나오는 양은 대체 어케 본담?
+	{
+		std::wstring cash = cstring2int2str(kiwoom.GetCommData(sTrCode, sRQName, 0, L"d+2추정예수금"));
+		result = L"{";
+		result += L"\"cash\":" + cash;
+		int cnt = kiwoom.GetRepeatCnt(sTrCode, sRQName);
+		for (int i = 0; i < cnt; ++i)
+		{
+			std::wstring code = kiwoom.GetCommData(sTrCode, sRQName, i, L"종목코드");
+			trim(code);
+			std::wstring qty = cstring2int2str(kiwoom.GetCommData(sTrCode, sRQName, i, L"보유수량"));
+			result += L",\"" + code + L"\":" + qty;
+		}
+		result += L"}";
+	}
+
+	resultMap[sRQName] = result;
+	reqMap[sRQName] = true; // Mark ready. Order matters!
 }
