@@ -208,6 +208,7 @@
   <ItemGroup>
     <ClInclude Include="crow_all.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="KHOpenAPICtrl.h" />
     <ClInclude Include="KiwoomRestfulCpp.h" />
     <ClInclude Include="KiwoomRestfulCppDlg.h" />
     <ClInclude Include="pch.h" />
@@ -215,6 +216,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="KHOpenAPICtrl.cpp" />
     <ClCompile Include="KiwoomRestfulCpp.cpp" />
     <ClCompile Include="KiwoomRestfulCppDlg.cpp" />
     <ClCompile Include="pch.cpp">

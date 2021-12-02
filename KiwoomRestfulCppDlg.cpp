@@ -26,6 +26,9 @@ CKiwoomRestfulCppDlg::CKiwoomRestfulCppDlg(CWnd* pParent /*=nullptr*/)
 void CKiwoomRestfulCppDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+
+	// 이거 안 하면 winocc.cpp line 377 에서 에러 뜸
+	DDX_Control(pDX, IDC_KHOPENAPICTRL1, theApp.kiwoom);
 }
 
 BEGIN_MESSAGE_MAP(CKiwoomRestfulCppDlg, CDialogEx)
@@ -46,6 +49,8 @@ BOOL CKiwoomRestfulCppDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 작은 아이콘을 설정합니다.
 
 	// TODO: 여기에 추가 초기화 작업을 추가합니다.
+	// 로그인 ㄱㄱ
+	theApp.kiwoomConnected = theApp.kiwoom.CommConnect();
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.
 }

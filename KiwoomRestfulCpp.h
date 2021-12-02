@@ -10,6 +10,7 @@
 #endif
 
 #include "resource.h"		// 주 기호입니다.
+#include "KHOpenAPICtrl.h"
 
 // CKiwoomRestfulCppApp:
 // 이 클래스의 구현에 대해서는 KiwoomRestfulCpp.cpp을(를) 참조하세요.
@@ -19,7 +20,9 @@ class CKiwoomRestfulCppApp : public CWinApp
 {
 public:
 	// crow::SimpleApp *app;
-	void *app; // Sorry man! It's not easy to include crow_all.h
+	void *crowApp; // Sorry man! It's not easy to include crow_all.h
+	CKHOpenAPI kiwoom;
+	bool kiwoomConnected;
 
 	CKiwoomRestfulCppApp();
 

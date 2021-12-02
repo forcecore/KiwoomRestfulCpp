@@ -23,30 +23,44 @@ END_MESSAGE_MAP()
 
 // CKiwoomRestfulCppApp 생성
 
+struct CrowThreadParams
+{
+	crow::SimpleApp* crowApp;
+	CKHOpenAPI* kiwoom;
+};
+
 UINT CrowThreadProc(LPVOID Param)
 {
-	crow::SimpleApp *app = (crow::SimpleApp*) Param;
-	app->run();
+	CrowThreadParams *params = (CrowThreadParams*) Param;
+	params->crowApp->run();
 	return 0;
 }
 
 CKiwoomRestfulCppApp::CKiwoomRestfulCppApp()
 {
-	// TODO: 여기에 생성 코드를 추가합니다.
-	// InitInstance에 모든 중요한 초기화 작업을 배치합니다.
-	crow::SimpleApp *app = new crow::SimpleApp();
-	this->app = (void *) app;
+	kiwoomConnected = false; // Will become true when the dialog is created and CommConnect is invoked there.
 
+	// InitInstance에 모든 중요한 초기화 작업을 배치합니다.
+	CrowThreadParams *params = new CrowThreadParams();
+	params->crowApp = new crow::SimpleApp();
+	params->kiwoom = &this->kiwoom;
+	this->crowApp = (void *) params->crowApp;
+	
 	// https://int-i.github.io/cpp/2020-07-22/vcpkg-boost/
 	// Install boost with vcpkg!
 	// .\vcpkg install boost boost:x64-windows
 	// .\vcpkg integrate install
-	CROW_ROUTE((*app), "/")([]() {
-		return "Hello world";
+	CROW_ROUTE((*params->crowApp), "/")([]()
+	{
+		return "Kiwoom Restful";
 	});
 
-	app->port(10000);
-	AfxBeginThread(CrowThreadProc, (LPVOID) app);
+	params->crowApp->port(12233);
+	AfxBeginThread(CrowThreadProc, (LPVOID) params);
+
+	// This should be done somewhere but oh wel!!
+	// delete params->crowApp;
+	// delete params;
 }
 
 
@@ -121,7 +135,6 @@ BOOL CKiwoomRestfulCppApp::InitInstance()
 
 	// 대화 상자가 닫혔으므로 응용 프로그램의 메시지 펌프를 시작하지 않고  응용 프로그램을 끝낼 수 있도록 FALSE를
 	// 반환합니다.
-	delete this->app;
 	return FALSE;
 }
 
