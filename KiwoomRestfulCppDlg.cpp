@@ -229,14 +229,9 @@ BOOL CKiwoomRestfulCppDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 큰 아이콘을 설정합니다.
 	SetIcon(m_hIcon, FALSE);		// 작은 아이콘을 설정합니다.
 
-	// Will become true when the dialog is created and CommConnect is invoked there.
-	// See KiwoomRestfulCppDlg.cpp
-	this->kiwoomConnected = false;
-	this->reqno = 0;
-
-	// TODO: 여기에 추가 초기화 작업을 추가합니다.
 	// 로그인 ㄱㄱ
-	// 성공여부는 event handler에서 알 수 있음.
+	this->kiwoomConnected = false; // Will become true when KiwoomOnEventConnect() received.
+	this->reqno = 0;
 	this->kiwoom.CommConnect();
 
 	// https://int-i.github.io/cpp/2020-07-22/vcpkg-boost/
@@ -246,7 +241,8 @@ BOOL CKiwoomRestfulCppDlg::OnInitDialog()
 	auto crowApp = new crow::SimpleApp();
 	this->crowApp = (void*)crowApp;
 	this->initCrowHandlers(crowApp);
-	crowApp->port(12233);
+	crowApp->bindaddr(theApp.bindAddr);
+	crowApp->port(theApp.portNumber);
 	AfxBeginThread(CrowThreadProc, (LPVOID) crowApp);
 
 	return TRUE;  // 포커스를 컨트롤에 설정하지 않으면 TRUE를 반환합니다.

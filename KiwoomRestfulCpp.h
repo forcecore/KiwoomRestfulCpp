@@ -11,6 +11,7 @@
 
 #include "resource.h"		// 주 기호입니다.
 #include "KHOpenAPICtrl.h"
+#include <string>
 
 // CKiwoomRestfulCppApp:
 // 이 클래스의 구현에 대해서는 KiwoomRestfulCpp.cpp을(를) 참조하세요.
@@ -20,6 +21,8 @@ class CKiwoomRestfulCppApp : public CWinApp
 {
 public:
 	CKiwoomRestfulCppApp();
+	int portNumber;
+	std::string bindAddr;
 
 // 재정의입니다.
 public:

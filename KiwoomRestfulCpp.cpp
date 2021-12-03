@@ -6,6 +6,7 @@
 #include "framework.h"
 #include "KiwoomRestfulCpp.h"
 #include "KiwoomRestfulCppDlg.h"
+#include <string>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -48,7 +49,6 @@ BOOL CKiwoomRestfulCppApp::InitInstance()
 
 	CWinApp::InitInstance();
 
-
 	AfxEnableControlContainer();
 
 	// 대화 상자에 셸 트리 뷰 또는
@@ -66,6 +66,19 @@ BOOL CKiwoomRestfulCppApp::InitInstance()
 	// TODO: 이 문자열을 회사 또는 조직의 이름과 같은
 	// 적절한 내용으로 수정해야 합니다.
 	SetRegistryKey(_T("로컬 애플리케이션 마법사에서 생성된 애플리케이션"));
+
+	this->portNumber = 12233;
+	this->bindAddr = "127.0.0.1";
+	if (__argc >= 3)
+	{
+		std::wstring addr = __wargv[1];
+		this->bindAddr.assign(addr.begin(), addr.end());
+		this->portNumber = std::stoi(__wargv[2]);
+	}
+	else if (__argc == 2)
+	{
+		this->portNumber = std::stoi(__wargv[1]);
+	}
 
 	CKiwoomRestfulCppDlg dlg;
 	m_pMainWnd = &dlg;
