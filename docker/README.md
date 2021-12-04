@@ -127,3 +127,35 @@ Docker host에서 실행했던 `run_vnc.sh`도 끝날 것이다.
 로 명령어로 다시 켤 수 있다.
 자동로그인을 위에서 성공적으로 해두었다면
 바로 OpenAPI 창이 뜨면서 Kiwoom connected라고 뜰 것이다.
+
+## 리눅스 서버에 서비스로 등록
+
+제대로 되었으면 서버에서 `./run_vnc_saved.sh` 가 실행되어있기만 하면 (Ctrl+C로 종료)
+
+```
+data = {
+    "accno": "키움계좌번호"
+}
+resp = requests.post("http://localhost:12233/balance", json=data)
+result = resp.json()
+```
+
+이런 request를 보내면 국내주식 잔고가 잘 반환 될 것이다.
+이를 주기적으로 켜고 끈다든지하려면 가장 좋은 것은 systemctl이다.
+
+`systemctl --user` 를 자주 사용해야하니
+`alias scu='systemctl --user'` 명령어를 쳐두자.
+
+```
+sudo loginctl enable-linger 유저명  # 유저가 재부팅 후 로그인하지 않아도 유저레벨 systemctl 작동
+mkdir -p ~/.config/systemd/user
+cd ~/.config/systemd/user
+ln -s ~/PATH/TO/KiwoomRestfulCpp/docker/kiwoom.service
+scu enable kiwoom.service
+scu start kiwoom.service
+```
+
+도커 그룹에 속하지 않으면 서비스가 아무리 해도 실행이 잘 안 될 것이다.
+도커 설치 후에 사용자를 /etc/group에서 docker그룹에 넣어주어도
+재부팅 없이는 잘 인식이 안 되는 경우가 있기도 함.
+시원하게 재부팅했다. 그러니 잘 된다.
