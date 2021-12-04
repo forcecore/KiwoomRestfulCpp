@@ -159,3 +159,16 @@ scu start kiwoom.service
 도커 설치 후에 사용자를 /etc/group에서 docker그룹에 넣어주어도
 재부팅 없이는 잘 인식이 안 되는 경우가 있기도 함.
 시원하게 재부팅했다. 그러니 잘 된다.
+
+`crontab -e` 주기적인 작업에 등록해서
+한국시간으로 아침 6:30에 도커를 켜고,
+저녁 6:30에 도커를 끄는 것을 추천한다.
+
+```
+# 0630 kiwoom start
+32 21 * * 0-4  /usr/bin/systemctl --user start kiwoom
+# 1830 kiwoom stop
+32  9 * * 1-5  /usr/bin/systemctl --user stop kiwoom
+```
+
+이런 식이다.
