@@ -1,0 +1,1 @@
+exec xterm -e "cd /kiwoom/drive_c ; wine KiwoomRestfulCpp.exe"
