@@ -57,6 +57,7 @@ RUN xvfb-run wine OpenAPISetup.exe /s /f1"c:\\ans.iss"
 # regsvr32: Successfully registered DLL 'C:/OpenAPI/khopenapi.ocx'
 # It didn't work and not commited into system.reg :)
 # As you can see, the setup is very brittle.
+WORKDIR /kiwoom/drive_c/OpenAPI
 RUN LANG=C LC_ALL=C xvfb-run regsvr32 C:/OpenAPI/khopenapi.ocx && \
     sleep 1 && \
     LANG=C LC_ALL=C xvfb-run regsvr32 C:/OpenAPI/khopenapi.ocx && \
@@ -64,3 +65,4 @@ RUN LANG=C LC_ALL=C xvfb-run regsvr32 C:/OpenAPI/khopenapi.ocx && \
 
 COPY ./xinitrc /root/.xinitrc
 COPY ./autostart /root/.config/openbox/autostart
+WORKDIR /kiwoom/drive_c
