@@ -2,6 +2,7 @@
 
 if [ ! -e $HOME/.ssh/NPKI ] ; then
     echo "공동인증서를 ~/.ssh/NPKI 로 복사하시오"
+    exit 1
 fi
 
 docker run \
