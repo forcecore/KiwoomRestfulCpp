@@ -1,0 +1,22 @@
+[Unit]
+Description=Kiwoom Restful API Server
+After=network-online.target
+Wants=network-online.target
+
+# https://dev.to/suntong/autostart-docker-container-with-systemd-5aod
+# The -a option in the Docker command for ExecStart makes sure it is running in attached mode, i.e., attaching STDOUT/STDERR and forwarding signals.
+# The -t option in the Docker command for ExecStop specifies seconds to wait for it to stop before killing the container.
+[Service]
+ExecStart=/usr/bin/docker start -a kiwoom_run
+ExecStop=/usr/bin/docker stop kiwoom_run
+Restart=always
+RestartSec=30
+#RemainAfterExit=yes
+
+#[Service]
+#ExecStart=/usr/bin/docker start -i kiwoom_run
+#Restart=always
+#RestartSec=10
+
+[Install]
+WantedBy=default.target
