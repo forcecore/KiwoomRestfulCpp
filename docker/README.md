@@ -141,34 +141,14 @@ result = resp.json()
 ```
 
 이런 request를 보내면 국내주식 잔고가 잘 반환 될 것이다.
-이를 주기적으로 켜고 끈다든지하려면 가장 좋은 것은 systemctl이다.
-
-`systemctl --user` 를 자주 사용해야하니
-`alias scu='systemctl --user'` 명령어를 쳐두자.
-
-```
-sudo loginctl enable-linger 유저명  # 유저가 재부팅 후 로그인하지 않아도 유저레벨 systemctl 작동
-mkdir -p ~/.config/systemd/user
-cd ~/.config/systemd/user
-ln -s ~/PATH/TO/KiwoomRestfulCpp/docker/kiwoom.service
-scu enable kiwoom.service
-scu start kiwoom.service
-```
-
-도커 그룹에 속하지 않으면 서비스가 아무리 해도 실행이 잘 안 될 것이다.
-도커 설치 후에 사용자를 /etc/group에서 docker그룹에 넣어주어도
-재부팅 없이는 잘 인식이 안 되는 경우가 있기도 함.
-시원하게 재부팅했다. 그러니 잘 된다.
-
-`crontab -e` 주기적인 작업에 등록해서
-한국시간으로 아침 6:30에 도커를 켜고,
-저녁 6:30에 도커를 끄는 것을 추천한다.
+이를 주기적으로 켜고 끈다든지하려면 가장 좋은 것은
+crontab으로 docker start, stop을 내려주는 것일 듯?
 
 ```
 # 0630 kiwoom start
-32 21 * * 0-4  /usr/bin/systemctl --user start kiwoom
+32 21 * * 0-4  /usr/bin/docker start kiwoom_run
 # 1830 kiwoom stop
-32  9 * * 1-5  /usr/bin/systemctl --user stop kiwoom
+32  9 * * 1-5  /usr/bin/docker stop kiwoom_run
 ```
 
 이런 식이다.
