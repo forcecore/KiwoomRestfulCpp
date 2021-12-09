@@ -13,6 +13,16 @@ bash ./build.sh
 
 와인, MFC 등이 설치되어야 해서 한참 걸릴 것이다.
 
+```
+Wine version
+wine-6.22
+
+Winetricks version
+20210206-next - sha256sum: 10d6518a92035512f9d5a20fcd8eab0b15dedb8a3c42eb7b6ad703ce909482a2
+```
+
+성공한 상태에는 버전들이 이랬다.
+
 ## 인증서와 비번 입력
 
 자동화를 위해서는 공동인증서를 복사하고 비번을 저장해야한다.
