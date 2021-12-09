@@ -39,7 +39,7 @@ RUN xvfb-run winetricks -q vcrun6
 # ans.iss can be created by running
 # wine OpenAPISetup.exe /r /f1"c:\\ans.iss"
 ENV LANG=ko_KR.utf8 LC_ALL=ko_KR.utf8
-COPY ./KiwoomRestfulCpp.exe ./OpenAPISetup.exe ./ans.iss /kiwoom/drive_c/
+COPY ./OpenAPISetup.exe ./ans.iss /kiwoom/drive_c/
 RUN xvfb-run wine OpenAPISetup.exe /s /f1"c:\\ans.iss"
 
 # If you only run OpenAPISetup.exe, you get
@@ -63,6 +63,4 @@ RUN LANG=C LC_ALL=C xvfb-run regsvr32 C:/OpenAPI/khopenapi.ocx && \
     LANG=C LC_ALL=C xvfb-run regsvr32 C:/OpenAPI/khopenapi.ocx && \
     sleep 1
 
-COPY ./xinitrc /root/.xinitrc
-COPY ./autostart /root/.config/openbox/autostart
 WORKDIR /kiwoom/drive_c

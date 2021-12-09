@@ -8,6 +8,7 @@ fi
 docker run \
     -i \
     -v $HOME/.ssh/NPKI:/kiwoom/drive_c/users/root/AppData/LocalLow/NPKI \
+    -v `pwd`:/docker \
     --net=host \
     --env WINEARCH=win32 \
     --env WINEPREFIX=/kiwoom \
@@ -15,4 +16,4 @@ docker run \
     --env LC_ALL=ko_KR.utf8 \
     --name kiwoom_run \
     -t kiwoom \
-    /bin/bash -c '( printf "123456\n123456\n\n" | vncpasswd ) && xinit openbox-session -- /usr/sbin/Xvnc :1 -PasswordFile /root/.vnc/passwd'
+    /bin/bash /docker/entry_point.sh
