@@ -5,7 +5,7 @@
 ## 빌드
 
 이 폴더 안에 OpenAPISetup.exe 를 배치한다.
-그리고 빌드한 (혹은 github에서 받은) OpenAPISetup.exe 도 같이 둔다.
+그리고 빌드한 (혹은 github repo의 releases 페이지에서 에서 받은) KiwoomRestfulCpp.exe 도 같이 둔다.
 
 ```
 bash ./build.sh
@@ -33,7 +33,7 @@ bash ./build.sh
 `bash run_vnc.sh` 로 VNC 실행.
 자동으로 VNC가 실행될 것이다.
 참고로 openbox 세션이고 비밀번호는 123456이다.
-비밀번호가 마음에 들지 않으면 `run_vnc.sh`를 열어서 수정하면 된다.
+비밀번호가 마음에 들지 않으면 `entry_point.sh`를 열어서 수정하면 된다.
 
 그리고 접속은 `localhost:5901` 로 하면 될 것이다.
 아닐 수 있는데,
@@ -51,14 +51,14 @@ openbox는 autostart에 서술된 프로그램을 실행하여
 
 ```
 # http://localhost:12233 에 bind, default
-wine KiwoomRestfulCppp.exe
+wine KiwoomRestfulCpp.exe
 
 # http://localhost:3333 에 bind. (첫 parameter가 port번호로 쓰임)
-wine KiwoomRestfulCppp.exe 3333
+wine KiwoomRestfulCpp.exe 3333
 
 # http://0.0.0.0:3333 에 bind.
 # Parameter가 두개면 첫째가 bind address, 둘째가 port
-wine KiwoomRestfulCppp.exe 0.0.0.0 3333
+wine KiwoomRestfulCpp.exe 0.0.0.0 3333
 ```
 
 언급만하고 이후엔 그냥 default로 실행하겠음.
