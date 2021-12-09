@@ -152,3 +152,16 @@ crontab으로 docker start, stop을 내려주는 것일 듯?
 ```
 
 이런 식이다.
+
+도커 자체가 서비스처럼 run될 수 있고 실행 방법에 따라 auto start도 가능하니
+굳이 systemctl로 만드는 것은 비추.
+해봤는데 systemctl은 cron에서 제어가 힘들다.
+굳이 한다면 kiwoom.service 파일 참고.
+(cron systemctl dbus 로 검색하면 오류해결법도 나올 것임)
+
+## Customization
+
+entry_point.sh를 적절히 수정해서 쓴다.
+vnc 비밀번호도 entry_point.sh에서 수정할 수 있음.
+Plain text로 스크립트에 적혀있는 것이 싫으면 해당 라인을 삭제하고
+GUI에서 xterm띄워서 vncpasswd명령어로 손으로 실행하면 될 것이다.
