@@ -14,4 +14,5 @@ cp /docker/autostart /root/.config/openbox/autostart
 cp /docker/KiwoomRestfulCpp.exe /kiwoom/drive_c
 
 printf "123456\n123456\n\n" | vncpasswd
+rm -f /tmp/.X1-lock
 xinit openbox-session -- /usr/sbin/Xvnc :1 -PasswordFile /root/.vnc/passwd
