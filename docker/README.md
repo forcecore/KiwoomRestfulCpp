@@ -175,3 +175,37 @@ entry_point.sh를 적절히 수정해서 쓴다.
 vnc 비밀번호도 entry_point.sh에서 수정할 수 있음.
 Plain text로 스크립트에 적혀있는 것이 싫으면 해당 라인을 삭제하고
 GUI에서 xterm띄워서 vncpasswd명령어로 손으로 실행하면 될 것이다.
+
+## 매수/매도/잔고 예제
+
+Docker로 서버를 가동했다고 치고, `server_url = http://localhost:12233` 가 base endpoint라고 해보자.
+
+매수/매도:
+
+```
+import requests
+
+data = {
+    "accno": accno,  # 계좌번호
+    "code": code,  # 종목코드
+    "qty": qty,  # 수량
+    "price": price,  # 0 for market order
+    "ordertype": orderty,  # 1=신규매수, 2=신규매도
+    "hogagb": "00",  # "03": 시장가, "61": 장전시간외종가
+}
+resp = requests.post(server_url + "/order", json=data)
+result = resp.json()
+```
+
+잔고:
+
+```
+import requests
+
+data = {
+    "accno": accno  # 계좌번호
+}
+resp = requests.post(server_url + "/balance", json=data)
+print(resp)
+result = resp.json()
+```
